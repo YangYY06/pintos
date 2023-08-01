@@ -70,6 +70,31 @@ static void locate_block_devices (void);
 static void locate_block_device (enum block_type, const char *name);
 #endif
 
+static void read_line(char* buffer, int size) {
+  int i = 0;
+  while (i < size - 1) {
+    uint8_t c;
+    c = input_getc();
+    if (c == '\r') {
+      putchar(c);
+      break;
+    }
+    else if (c == 127 || c == 8) {  // ASCII for "Delete" and '\b' 
+      if (i > 0) {
+        i--;
+        putchar('\b');
+        putchar(' ');
+        putchar('\b');
+      }
+    }
+    else {
+      buffer[i++] = c;
+      putchar(c);
+    }
+  }
+  buffer[i] = '\0';
+}
+
 int pintos_init (void) NO_RETURN;
 
 /** Pintos main entry point. */
@@ -133,7 +158,21 @@ pintos_init (void)
     /* Run actions specified on kernel command line. */
     run_actions (argv);
   } else {
-    // TODO: no command line passed to kernel. Run interactively 
+    // TODO: no command line passed to kernel. Run interactively
+    while(1) {
+      char command[100];
+      printf("PKUOS > ");
+      read_line(command, sizeof(command));
+      if (!strcmp(command, "exit")) {
+        printf("\n");
+        break;
+      }
+        
+      else if (!strcmp(command, "whoami"))
+        printf("\ncrisp\n");
+      else
+        printf("\ninvalid command\n");
+    }
   }
 
   /* Finish up. */
