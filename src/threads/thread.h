@@ -90,9 +90,12 @@ struct thread
     int priority;                       /**< Priority. */
     struct list_elem allelem;           /**< List element for all threads list. */
 
+    struct lock *lock_wait;             /* The lock this thread is waiting on */
+    struct list lock_hold;              /* The locks this thread holds */
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /**< List element. */
-    int64_t waken_time;
+    int64_t waken_time;                 /* Time for waking up. */
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -140,5 +143,6 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 bool thread_time_less (const struct list_elem *, const struct list_elem *, void *);
+bool priority_greater (const struct list_elem *, const struct list_elem *, void *);
 
 #endif /**< threads/thread.h */

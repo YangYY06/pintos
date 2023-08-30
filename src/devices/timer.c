@@ -31,7 +31,7 @@ static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
 /* List of the waiting threads. */
-static struct list block_list;
+static struct list sleep_list;
 
 /** Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
@@ -40,7 +40,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
-  list_init(&block_list);
+  list_init(&sleep_list);
 }
 
 /** Calibrates loops_per_tick, used to implement brief delays. */
@@ -101,7 +101,7 @@ timer_sleep (int64_t ticks)
 
   struct thread * cur = thread_current();
   cur->waken_time = start + ticks;
-  list_insert_ordered(&block_list, &cur->elem, thread_time_less, NULL);
+  list_insert_ordered(&sleep_list, &cur->elem, thread_time_less, NULL);
   thread_block();
 
   intr_set_level(INTR_ON);
@@ -187,8 +187,8 @@ timer_interrupt (struct intr_frame *args UNUSED)
   /* Wake up blocked threads */
   struct list_elem *e;
   struct thread *t;
-  while (!list_empty(&block_list)) {
-    e = list_front(&block_list);
+  while (!list_empty(&sleep_list)) {
+    e = list_front(&sleep_list);
     t = list_entry(e, struct thread, elem);
     if (t->waken_time > ticks)
       break;
