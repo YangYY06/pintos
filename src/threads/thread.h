@@ -88,6 +88,7 @@ struct thread
     char name[16];                      /**< Name (for debugging purposes). */
     uint8_t *stack;                     /**< Saved stack pointer. */
     int priority;                       /**< Priority. */
+    int ori_priority;                    /* Priority without donation. */
     struct list_elem allelem;           /**< List element for all threads list. */
 
     struct lock *lock_wait;             /* The lock this thread is waiting on */
@@ -143,6 +144,10 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 bool thread_time_less (const struct list_elem *, const struct list_elem *, void *);
-bool priority_greater (const struct list_elem *, const struct list_elem *, void *);
+bool thread_priority_greater (const struct list_elem *, const struct list_elem *, void *);
+bool thread_priority_less (const struct list_elem *, const struct list_elem *, void *);
+
+void thread_donate_priority(struct thread *);
+void priority_uptade_chain(struct thread *);
 
 #endif /**< threads/thread.h */
