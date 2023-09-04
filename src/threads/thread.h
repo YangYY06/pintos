@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "threads/fixed-point.h"
 
 /** States in a thread's life cycle. */
 enum thread_status
@@ -23,6 +24,11 @@ typedef int tid_t;
 #define PRI_MIN 0                       /**< Lowest priority. */
 #define PRI_DEFAULT 31                  /**< Default priority. */
 #define PRI_MAX 63                      /**< Highest priority. */
+
+/* Thread Niceness. */
+#define NICE_MIN -20                       /**< Lowest niceness. */
+#define NICE_DEFAULT 0                  /**< Default niceness. */
+#define NICE_MAX 20                      /**< Highest niceness. */
 
 /** A kernel thread or user process.
 
@@ -91,12 +97,16 @@ struct thread
     int ori_priority;                    /* Priority without donation. */
     struct list_elem allelem;           /**< List element for all threads list. */
 
-    struct lock *lock_wait;             /* The lock this thread is waiting on */
-    struct list lock_hold;              /* The locks this thread holds */
-
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /**< List element. */
     int64_t waken_time;                 /* Time for waking up. */
+
+    struct lock *lock_wait;             /* The lock this thread is waiting on */
+    struct list lock_hold;              /* The locks this thread holds */
+
+    /* mlfqs. */
+    int nice;                           /* Nocesness of the thread. */
+    fixed_t recent_cpu;                 /* CPU usage of this thread. */
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -148,6 +158,11 @@ bool thread_priority_greater (const struct list_elem *, const struct list_elem *
 bool thread_priority_less (const struct list_elem *, const struct list_elem *, void *);
 
 void thread_donate_priority(struct thread *);
-void priority_uptade_chain(struct thread *);
+
+/* mlfqs. */
+void thread_update_priority(void);
+void thread_update_recent_cpu(void);
+void thread_inc_recent_cpu(void);
+void thread_update_load_avg(void);
 
 #endif /**< threads/thread.h */

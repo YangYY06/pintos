@@ -93,12 +93,10 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
-
   ASSERT (intr_get_level () == INTR_ON);
-  
   intr_disable();
 
+  int64_t start = timer_ticks ();
   struct thread * cur = thread_current();
   cur->waken_time = start + ticks;
   list_insert_ordered(&sleep_list, &cur->elem, thread_time_less, NULL);
@@ -184,7 +182,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
 
-  /* Wake up blocked threads */
+  /* Wake up sleeping threads */
   struct list_elem *e;
   struct thread *t;
   while (!list_empty(&sleep_list)) {
@@ -192,8 +190,24 @@ timer_interrupt (struct intr_frame *args UNUSED)
     t = list_entry(e, struct thread, elem);
     if (t->waken_time > ticks)
       break;
+    if (thread_current() -> priority < t -> priority)
+      intr_yield_on_return();
     list_remove(e);
     thread_unblock(t);
+  }
+
+  if (thread_mlfqs) {
+    thread_inc_recent_cpu();
+
+    /* When timer reaches a multiple of seconds */
+    if (ticks % TIMER_FREQ == 0) {
+      thread_update_load_avg();
+      thread_update_recent_cpu();
+    }
+
+    /* When timer reaches a multiple of four ticks */
+    if (ticks % 4 == 0)
+      thread_update_priority();
   }
   
 }

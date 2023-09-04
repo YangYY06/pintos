@@ -223,10 +223,12 @@ lock_acquire (struct lock *lock)
 
   if (lock->holder != NULL) {
     /* This lock is held by another thread. */
-    if (thread_get_priority () > lock->max_priority)
+    if (!thread_mlfqs) {
+      if (thread_get_priority () > lock->max_priority)
         lock->max_priority = thread_get_priority ();
-    thread_current ()->lock_wait = lock;
-    thread_donate_priority (lock->holder);
+      thread_current ()->lock_wait = lock;
+      thread_donate_priority (lock->holder);
+    }
   }
 
   sema_down (&lock->semaphore);
@@ -268,7 +270,8 @@ lock_release (struct lock *lock)
 
   lock->holder = NULL;
   list_remove(&lock->elem);
-  thread_donate_priority(thread_current());
+  if (!thread_mlfqs)
+    thread_donate_priority(thread_current());
   sema_up (&lock->semaphore);
   /* Reset the thread priority. */
   update_lock_priority(lock);
